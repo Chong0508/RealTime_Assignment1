@@ -5,7 +5,7 @@ import java.util.Scanner;
 
 public class Assignment1 {
     public static void main(String[] args) {
-        File folder = new File("src/Exercise4/src/main/java/org/example");
+        File folder = new File("src/main/Exercise4/src/main/java/org/example");
         int javaFileCount = 0;
         int issuesCount = 0;
 
