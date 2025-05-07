@@ -2,45 +2,58 @@ package org.example;
 
 import java.io.*;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Assignment1 {
     public static void main(String[] args) {
-        File folder = new File("src/main/Exercise4/src/main/java/org/example");
-        int javaFileCount = 0;
-        int issuesCount = 0;
+        Scanner scan = new Scanner(System.in);
 
+        // Testing path: src/main/Exercise4/src/main/java/org/example
+        System.out.print("Enter the directory path to check for Java files: ");
+        String path = scan.nextLine();
+        scan.close();
+
+        File folder = new File(path);
         File[] listOfFiles = folder.listFiles((dir, name) -> name.endsWith(".java"));
 
-        if(listOfFiles != null) {
-            for(File file : listOfFiles) {
-                javaFileCount++;
-                issuesCount += countSolvedIssues(file);
-            }
+        if (listOfFiles == null) {
+            System.out.println("Invalid directory path or no Java files found!");
+            return;
         }
 
-        System.out.println("Number of Java Files = "+ javaFileCount);
-        System.out.println("Number of Issues = "+ issuesCount);
-    }
+        int javaFileCount = listOfFiles.length;
+        AtomicInteger issuesCount = new AtomicInteger(0);
+        Thread[] threads = new Thread[javaFileCount];
 
-    private static int countSolvedIssues(File file) {
-        int count = 0;
-        try {
-            Scanner scanner = new Scanner(file);
-            String line;
+        for (int i = 0; i < javaFileCount; i++) {
+            final File file = listOfFiles[i];
 
-            while (scanner.hasNextLine()) {
-                line = scanner.nextLine().toUpperCase();
-                if(line.contains("// SOLVED")) {
-                    count++;
+            threads[i] = new Thread(() -> {
+                try (Scanner scanner = new Scanner(file)) {
+                    while (scanner.hasNextLine()) {
+                        String line = scanner.nextLine().toUpperCase();
+                        if (line.contains("// SOLVED")) {
+                            issuesCount.incrementAndGet();
+                        }
+                    }
+                } catch (FileNotFoundException e) {
+                    System.out.println("File not found: " + file.getName());
                 }
-            }
-
-            scanner.close();
-
-        } catch (FileNotFoundException e) {
-            System.out.println("File not found: " + file.getName());
+            });
+            threads[i].start();
         }
 
-        return count;
+        // Wait for all threads to finish
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                System.out.println("Thread interrupted.");
+            }
+        }
+
+        System.out.println("Number of Java Files = " + javaFileCount);
+        System.out.println("Number of Issues = " + issuesCount.get());
     }
 }
+
